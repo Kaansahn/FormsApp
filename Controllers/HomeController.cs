@@ -49,12 +49,11 @@ public class HomeController : Controller
     [HttpPost]
      public async Task<IActionResult> Create(Product model, IFormFile imageFile)
     {
-        var allowdExtensions = new[] {".jpg", ".jpeg", ".png"};
-        var extension = Path.GetExtension(imageFile.FileName);
-        var randomFileName = string.Format($"{Guid.NewGuid().ToString()}{extension}");
-        var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", randomFileName);
+        var extension = "";
 
         if(imageFile != null) {
+            var allowdExtensions = new[] {".jpg", ".jpeg", ".png"};
+            extension = Path.GetExtension(imageFile.FileName);
             if(!allowdExtensions.Contains(extension)){
                 ModelState.AddModelError("", "Gecerli bir resim seciniz.");
             }
@@ -63,13 +62,15 @@ public class HomeController : Controller
         if(ModelState.IsValid)
         {
             if(imageFile != null){   
+                var randomFileName = string.Format($"{Guid.NewGuid().ToString()}{extension}");
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/img", randomFileName);
                 using(var stream = new FileStream(path, FileMode.Create)){
                     await imageFile.CopyToAsync(stream);
+                    model.Image = randomFileName;
+                    model.ProductId = Repository.Products.Count + 1;
+                    Repository.CreateProduct(model);
+                    return RedirectToAction("Index");
                 }
-                model.Image = randomFileName;
-                model.ProductId = Repository.Products.Count + 1;
-                Repository.CreateProduct(model);
-                return RedirectToAction("Index");
             }
         }
         ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
@@ -90,7 +91,7 @@ public class HomeController : Controller
         }
 
         ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
-        
+
         return View(entity);
     }
 
@@ -116,5 +117,21 @@ public class HomeController : Controller
         }
         ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
         return View(model);
+    }
+
+    public IActionResult Delete(int? id){
+        if(id == null) {
+            return NotFound();
+        }
+
+        var entity = Repository.Products.FirstOrDefault(p => p.ProductId ==id);
+
+        if(entity == null)
+        {
+            return NotFound();
+        }
+
+        Repository.DeleteProduct(entity);
+        return RedirectToAction("Index");
     }
 }
