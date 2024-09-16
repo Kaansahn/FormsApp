@@ -19,7 +19,7 @@ public class HomeController : Controller
         if (!String.IsNullOrEmpty(searchString))
         {
             ViewBag.SearchString = searchString;
-            products = products.Where(p => p.Name.ToLower().Contains(searchString)).ToList();
+            products = products.Where(p => p.Name!.ToLower().Contains(searchString)).ToList();
         }
 
         if (!String.IsNullOrEmpty(category) && category != "0")
@@ -46,7 +46,7 @@ public class HomeController : Controller
     }
 
     [HttpPost]
-     public IActionResult Create(Product model)
+     public IActionResult Create(Product model, IFormFile imageFile)
     {
         if(ModelState.IsValid)
         {
