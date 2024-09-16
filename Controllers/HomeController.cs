@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using FormsApp.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Mvc.DataAnnotations;
 
 namespace FormsApp.Controllers;
 
@@ -61,15 +62,32 @@ public class HomeController : Controller
 
         if(ModelState.IsValid)
         {
-            using(var stream = new FileStream(path, FileMode.Create)){
-                await imageFile.CopyToAsync(stream);
+            if(imageFile != null){   
+                using(var stream = new FileStream(path, FileMode.Create)){
+                    await imageFile.CopyToAsync(stream);
+                }
+                model.Image = randomFileName;
+                model.ProductId = Repository.Products.Count + 1;
+                Repository.CreateProduct(model);
+                return RedirectToAction("Index");
             }
-            model.Image = randomFileName;
-            model.ProductId = Repository.Products.Count + 1;
-            Repository.CreateProduct(model);
-            return RedirectToAction("Index");
         }
         ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
         return View(model);
+    }
+
+    public IActionResult Edit(int? id){
+        if(id == null)
+        {
+            return NotFound();
+        }
+        var entity = Repository.Products.FirstOrDefault(p => p.ProductId ==id);
+        if(entity == null)
+        {
+            return NotFound();
+        }
+        ViewBag.Categories = new SelectList(Repository.Categories, "CategoryId", "Name");
+
+        return View(entity);
     }
 }
